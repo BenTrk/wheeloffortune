@@ -32,6 +32,17 @@ public class GameController {
         if(riddleRepository.count()<1){
             gameService.readRiddles(riddleRepository);
         }
+        // First, send just '_' for every character. (charSequence, copy that to sendCharSequence,
+        // replace every letter with '_'). Return String sendCharSequenceToString.
+        // Make it as post mapping. In body, request:
+        // String guess - so the software can see if a guess is coming in
+        //    - case notEmpty: see if it is the correct answer. Calculate points, get new riddle
+        //      or calculate points lost and move on
+        //    - case empty: ignore
+        // char character - so the software can check if there is a hit.
+        //    - get charSequence, go through it and count occurrences. If more than 0,
+        //      include these to the right place in sendCharSequence.
+        //      Calculate points and send back sendCharSequenceToString.
         return gameService.getRiddle(riddleRepository);
     }
 
