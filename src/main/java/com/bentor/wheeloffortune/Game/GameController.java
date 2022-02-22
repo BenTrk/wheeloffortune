@@ -1,6 +1,8 @@
 package com.bentor.wheeloffortune.Game;
 
 import com.bentor.wheeloffortune.Classes.Guess;
+import com.bentor.wheeloffortune.Classes.Prize;
+import com.bentor.wheeloffortune.Classes.PrizeHandler;
 import com.bentor.wheeloffortune.Classes.Team;
 import com.bentor.wheeloffortune.Repositories.PlayerRepository;
 import com.bentor.wheeloffortune.Repositories.RiddleRepository;
@@ -9,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 
 @RestController
 @CrossOrigin("http://localhost:8081/")
@@ -19,6 +23,7 @@ public class GameController {
     private final TeamRepository teamRepository;
     private final PlayerRepository playerRepository;
     private String riddle;
+    private ArrayList<Prize> prizeList;
 
     @Autowired
     public GameController(GameService gameService, RiddleRepository riddleRepository,
@@ -31,21 +36,31 @@ public class GameController {
 
         gameService.readRiddles(riddleRepository);
         this.riddle = gameService.getRiddle(riddleRepository);
+        this.prizeList = gameService.prizeInitialize();
     }
 
-    //this may be not needed.
-    @GetMapping(path = "/getriddle")
-    public String getRiddle() throws IOException {
-        if(riddleRepository.count()<1){
-            gameService.readRiddles(riddleRepository);
-        }
-        return gameService.getRiddle(riddleRepository);
+    @GetMapping(path = "/prize")
+    public ArrayList<Prize> getPrizes(){
+        Collections.shuffle(this.prizeList);
+        return this.prizeList;
     }
 
     //this is to show the riddle
     @GetMapping(path = "/game")
     public String gameLogic() {
         return gameService.turnRiddleToCode(riddle);
+    }
+
+    //this is to handle which team can play
+    //set it on backend - write simple function to iterate through list of teams
+    //check this with get http every time needed
+
+    //this is to handle incoming ids from prize buttons
+    @PostMapping(path = "/prizehandler")
+    @ResponseBody
+    public String prizeHandler(@RequestBody PrizeHandler prizeHandler){
+        Prize prize = this.prizeList.get(prizeHandler.getId());
+        return gameService.specialHandler(prize, prizeHandler.getTeam(), teamRepository);
     }
 
     //this is to get the guesses for chars
