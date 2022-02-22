@@ -131,6 +131,7 @@ public class GameService {
         return prizeList;
     }
 
+    //on frontend, use v-if!
     public String specialHandler(Prize prize, Team team, TeamRepository teamRepository){
         switch(prize.getSpecial()){
             case '-':
