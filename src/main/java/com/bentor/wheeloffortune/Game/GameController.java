@@ -1,5 +1,7 @@
 package com.bentor.wheeloffortune.Game;
 
+import com.bentor.wheeloffortune.Classes.Guess;
+import com.bentor.wheeloffortune.Classes.Team;
 import com.bentor.wheeloffortune.Repositories.PlayerRepository;
 import com.bentor.wheeloffortune.Repositories.RiddleRepository;
 import com.bentor.wheeloffortune.Repositories.TeamRepository;
@@ -42,13 +44,23 @@ public class GameController {
 
     //this is to show the riddle
     @GetMapping(path = "/game")
-    public String gameLogic() throws IOException {
+    public String gameLogic() {
         return gameService.turnRiddleToCode(riddle);
     }
 
     //this is to get the guesses for chars
     @PostMapping(path = "/guesschar")
-    public String guessChar(){ return null; }
+    @ResponseBody
+    public String guessChar(@RequestBody Guess guess){
+        Team team = teamRepository.findTeamByName(guess.getTeamName());
+        return gameService.guessFunction(team, guess.getPrize(), guess.getGuess(),
+                riddle, teamRepository);
+    }
+
+    //this is for special stuff
+    @PostMapping(path = "/special")
+    @ResponseBody
+    public String specialCards(){ return null; }
 
     //this is to get the guess for the riddle
     @PostMapping(path = "/guessriddle")

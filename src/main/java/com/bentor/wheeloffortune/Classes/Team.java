@@ -19,6 +19,7 @@ public class Team {
     @GeneratedValue
     Long id;
     String name;
+    int money;
 
     @OneToMany(mappedBy = "team", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     Set<Player> players;

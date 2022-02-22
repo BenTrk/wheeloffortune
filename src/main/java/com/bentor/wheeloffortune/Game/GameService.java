@@ -26,7 +26,7 @@ public class GameService {
         }
     }
 
-    public String getRiddle(RiddleRepository riddleRepository) throws IOException {
+    public String getRiddle(RiddleRepository riddleRepository) {
         List<Riddle> riddlesList = riddleRepository.findRiddleByWasUsed(false);
         String riddle;
         //generate a random number and get the random riddle, then remove it from the list so it wont be assigned again.
@@ -35,7 +35,6 @@ public class GameService {
         int rnd = random.nextInt(maxRand);
         riddle = riddlesList.get(rnd).getRiddle();
         Riddle currentRiddle = riddlesList.get(rnd);
-        riddleRepository.delete(currentRiddle);
         currentRiddle.setWasUsed(true);
         riddleRepository.save(currentRiddle);
         return riddle;
@@ -43,26 +42,41 @@ public class GameService {
 
     public String turnRiddleToCode(String riddle){
         char[] charSequence = riddle.toCharArray();
-        char[] sendCharSequence = new char[charSequence.length];
         for (int i = 0; i < charSequence.length; i++) {
             char c = charSequence[i];
             if (Character.isLetter(c)) {
                 c = '_';
             }
-            sendCharSequence[i] = c;
+            charSequence[i] = c;
         }
-        final String sendCharSequenceToString = String.valueOf(sendCharSequence);
-        return sendCharSequenceToString;
+        return String.valueOf(charSequence);
     }
 
     public Team createTeam(String name){
-        Team team = new Team(name);
-        return team;
+        return new Team(name);
     }
 
     public Player createPlayer(TeamRepository teamRepository, String playerName, String teamName){
         Team team = teamRepository.findTeamByName(teamName);
-        Player player = new Player(playerName, team);
-        return player;
+        return new Player(playerName, team);
+    }
+
+    public String guessFunction(Team team, int prize, Character guess, String riddle,
+                                TeamRepository teamRepository) {
+        char[] charSequence = riddle.toCharArray();
+        Character g = Character.toLowerCase(guess);
+        int counter = 0;
+        for (int i = 0; i < charSequence.length; i++) {
+            Character c = Character.toLowerCase(charSequence[i]);
+            if (!c.equals(g) && Character.isLetter(c)) {
+                c = '_';
+            } else if (c.equals(g) && Character.isLetter(c)){
+                counter++;
+            }
+            charSequence[i] = c;
+        }
+        team.setMoney(prize*counter);
+        teamRepository.save(team);
+        return String.valueOf(charSequence);
     }
 }
