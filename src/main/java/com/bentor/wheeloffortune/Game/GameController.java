@@ -4,9 +4,7 @@ import com.bentor.wheeloffortune.Repositories.PlayerRepository;
 import com.bentor.wheeloffortune.Repositories.RiddleRepository;
 import com.bentor.wheeloffortune.Repositories.TeamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 
@@ -18,33 +16,43 @@ public class GameController {
     private final RiddleRepository riddleRepository;
     private final TeamRepository teamRepository;
     private final PlayerRepository playerRepository;
+    private String riddle;
 
     @Autowired
-    public GameController(GameService gameService, RiddleRepository riddleRepository, TeamRepository teamRepository, PlayerRepository playerRepository){
+    public GameController(GameService gameService, RiddleRepository riddleRepository,
+                          TeamRepository teamRepository,
+                          PlayerRepository playerRepository) throws IOException {
         this.gameService = gameService;
         this.riddleRepository = riddleRepository;
         this.teamRepository = teamRepository;
         this.playerRepository = playerRepository;
+
+        gameService.readRiddles(riddleRepository);
+        this.riddle = gameService.getRiddle(riddleRepository);
     }
 
-    @GetMapping(path = "/game")
+    //this may be not needed.
+    @GetMapping(path = "/getriddle")
     public String getRiddle() throws IOException {
         if(riddleRepository.count()<1){
             gameService.readRiddles(riddleRepository);
         }
-        // First, send just '_' for every character. (charSequence, copy that to sendCharSequence,
-        // replace every letter with '_'). Return String sendCharSequenceToString.
-        // Make it as post mapping. In body, request:
-        // String guess - so the software can see if a guess is coming in
-        //    - case notEmpty: see if it is the correct answer. Calculate points, get new riddle
-        //      or calculate points lost and move on
-        //    - case empty: ignore
-        // char character - so the software can check if there is a hit.
-        //    - get charSequence, go through it and count occurrences. If more than 0,
-        //      include these to the right place in sendCharSequence.
-        //      Calculate points and send back sendCharSequenceToString.
         return gameService.getRiddle(riddleRepository);
     }
+
+    //this is to show the riddle
+    @GetMapping(path = "/game")
+    public String gameLogic() throws IOException {
+        return gameService.turnRiddleToCode(riddle);
+    }
+
+    //this is to get the guesses for chars
+    @PostMapping(path = "/guesschar")
+    public String guessChar(){ return null; }
+
+    //this is to get the guess for the riddle
+    @PostMapping(path = "/guessriddle")
+    public String guessRiddle(){ return null; }
 
     //Testing purposes!
     @GetMapping(path="/setup")

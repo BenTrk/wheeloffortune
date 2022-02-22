@@ -41,6 +41,20 @@ public class GameService {
         return riddle;
     }
 
+    public String turnRiddleToCode(String riddle){
+        char[] charSequence = riddle.toCharArray();
+        char[] sendCharSequence = new char[charSequence.length];
+        for (int i = 0; i < charSequence.length; i++) {
+            char c = charSequence[i];
+            if (Character.isLetter(c)) {
+                c = '_';
+            }
+            sendCharSequence[i] = c;
+        }
+        final String sendCharSequenceToString = String.valueOf(sendCharSequence);
+        return sendCharSequenceToString;
+    }
+
     public Team createTeam(String name){
         Team team = new Team(name);
         return team;
