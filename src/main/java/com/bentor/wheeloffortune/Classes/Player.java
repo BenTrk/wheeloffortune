@@ -1,5 +1,6 @@
 package com.bentor.wheeloffortune.Classes;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,6 +22,7 @@ public class Player {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "teams_id", nullable = false)
+    @JsonBackReference
     private Team team;
 
     public Player(String name, Team team){

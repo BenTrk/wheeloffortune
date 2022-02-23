@@ -23,7 +23,7 @@ public class GameController {
     private final TeamRepository teamRepository;
     private final PlayerRepository playerRepository;
     private String riddle;
-    private ArrayList<Prize> prizeList;
+    private final ArrayList<Prize> prizeList;
     private Team teamInPlay;
     private Prize prize;
     private Integer guessMoney;
@@ -48,6 +48,11 @@ public class GameController {
         return this.prizeList;
     }
 
+    @GetMapping(path = "/newriddle")
+    public String getNewRiddle() {
+        this.riddle = gameService.getRiddle(this.riddleRepository);
+        return "New riddle set.";
+    }
     //this is to show the riddle
     //when start and when new riddle, getTeamInPlay() should be called!
     @GetMapping(path = "/game")
@@ -135,9 +140,15 @@ public class GameController {
     @GetMapping(path="/setup")
     public String setTeamAndPlayers(){
         teamRepository.save(gameService.createTeam("Csapatnév"));
+        teamRepository.save(gameService.createTeam("Csapatnév 2"));
+        teamRepository.save(gameService.createTeam("Csapatnév 3"));
         playerRepository.save(gameService.createPlayer(teamRepository, "Béla", "Csapatnév"));
         playerRepository.save(gameService.createPlayer(teamRepository, "Géza", "Csapatnév"));
         playerRepository.save(gameService.createPlayer(teamRepository, "Kató", "Csapatnév"));
+        playerRepository.save(gameService.createPlayer(teamRepository, "Sanyi", "Csapatnév 2"));
+        playerRepository.save(gameService.createPlayer(teamRepository, "Bandi", "Csapatnév 2"));
+        playerRepository.save(gameService.createPlayer(teamRepository, "Mari", "Csapatnév 3"));
+        playerRepository.save(gameService.createPlayer(teamRepository, "Juli", "Csapatnév 3"));
         return "Teams and players set.";
     }
 }

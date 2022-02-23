@@ -17,36 +17,50 @@ public class GameService {
 
     public Team whichTeamPlays(Team teamInPlay, TeamRepository teamRepository){
         List<Team> teamList = teamRepository.findAll();
-        Long teamInPlayId = teamInPlay.getId();
+        Long teamInPlayId;
+        try{
+            teamInPlayId = teamInPlay.getId();
+        } catch (NullPointerException ex){ teamInPlayId = -1L; }
         //if we just started the game, or we are at the end of the list
-        if (teamInPlay.getId() == null || teamInPlayId == teamList.size()-1){
+        if (teamInPlayId == -1L || teamInPlayId == teamList.size()-1){
             teamInPlayId = 0L;
             Team team = teamList.get(Math.toIntExact(teamInPlayId));
             while (team.getIsSilenced()){
                 teamInPlayId++;
                 team.setIsSilenced(false);
                 teamRepository.save(team);
+                if (teamInPlayId < teamList.size()-1){
                 team = teamList.get(Math.toIntExact(teamInPlayId));
+                } else {
+                    teamInPlayId = 0L;
+                    team = teamList.get(Math.toIntExact(teamInPlayId));
+                }
             }
             return team;
         }
         //if we are not at the end of the list
-        if (teamInPlayId < teamList.size()-1) {
+        else {
             int i = (int) (teamInPlayId + 1);
             Optional<Team> optionalTeamInPlay = teamRepository.findById(String.valueOf(i));
             //isPresent check!
-            Team team = optionalTeamInPlay.get();
+            Team team = optionalTeamInPlay.orElse(null);
+            //Not elegant, but I will leave this as is. Can cause nullpointexception, but I know that it
+            //wont. The id I provide above MUST be a valid team id - or the problem is not here.
             while (team.getIsSilenced()){
                 i++;
                 team.setIsSilenced(false);
                 teamRepository.save(team);
-                optionalTeamInPlay = teamRepository.findById(String.valueOf(i));
-                team = optionalTeamInPlay.get();
+                if (i < teamList.size()-1) {
+                    optionalTeamInPlay = teamRepository.findById(String.valueOf(i));
+                    team = optionalTeamInPlay.orElse(null);
+                } else {
+                    i = 0;
+                    optionalTeamInPlay = teamRepository.findById(String.valueOf(i));
+                    team = optionalTeamInPlay.orElse(null);
+                }
             }
             return team;
         }
-        //don't know how could this happen, but okay.
-        return null;
     }
 
     public void readRiddles(RiddleRepository riddleRepository) throws IOException {

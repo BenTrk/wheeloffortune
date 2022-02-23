@@ -1,5 +1,6 @@
 package com.bentor.wheeloffortune.Classes;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,10 +20,11 @@ public class Team {
     @GeneratedValue
     Long id;
     String name;
-    int money;
+    int money = 0;
     Boolean isSilenced = false;
 
     @OneToMany(mappedBy = "team", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonManagedReference
     Set<Player> players;
 
     public Team(String name){
