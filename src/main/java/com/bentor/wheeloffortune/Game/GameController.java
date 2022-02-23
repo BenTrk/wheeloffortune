@@ -2,7 +2,6 @@ package com.bentor.wheeloffortune.Game;
 
 import com.bentor.wheeloffortune.Classes.Guess;
 import com.bentor.wheeloffortune.Classes.Prize;
-import com.bentor.wheeloffortune.Classes.PrizeHandler;
 import com.bentor.wheeloffortune.Classes.Team;
 import com.bentor.wheeloffortune.Repositories.PlayerRepository;
 import com.bentor.wheeloffortune.Repositories.RiddleRepository;
@@ -13,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 @RestController
 @CrossOrigin("http://localhost:8081/")
@@ -24,6 +24,9 @@ public class GameController {
     private final PlayerRepository playerRepository;
     private String riddle;
     private ArrayList<Prize> prizeList;
+    private Team teamInPlay;
+    private Prize prize;
+    private Integer guessMoney;
 
     @Autowired
     public GameController(GameService gameService, RiddleRepository riddleRepository,
@@ -46,40 +49,87 @@ public class GameController {
     }
 
     //this is to show the riddle
+    //when start and when new riddle, getTeamInPlay() should be called!
     @GetMapping(path = "/game")
     public String gameLogic() {
-        return gameService.turnRiddleToCode(riddle);
+        return gameService.turnRiddleToCode(this.riddle);
     }
 
     //this is to handle which team can play
-    //set it on backend - write simple function to iterate through list of teams
     //check this with get http every time needed
+    @GetMapping(path = "/teaminplay")
+    public String getTeamInPlay(){
+        this.teamInPlay = gameService.whichTeamPlays(this.teamInPlay, this.teamRepository);
+        return teamInPlay.getName();
+    }
+
+    //this is to send the list of teams to show actual standings
+    @GetMapping(path = "/teamlist")
+    public List<Team> getTeamList(){
+        return teamRepository.findAll();
+    }
+
+    //send list of teams every time needed!(to update standings)
+    //send button - send char guess - also dialog! Dialog every time response comes from backend
+    //  with prize. For bankrupt, 50/50 and double, just a dialog with an ok button.
+    //dialogs - v-if, specials, these have their own buttons
+    //guess button - send string guess and guess prize, use dialog for this too!
 
     //this is to handle incoming ids from prize buttons
     @PostMapping(path = "/prizehandler")
     @ResponseBody
-    public String prizeHandler(@RequestBody PrizeHandler prizeHandler){
-        Prize prize = this.prizeList.get(prizeHandler.getId());
-        return gameService.specialHandler(prize, prizeHandler.getTeam(), teamRepository);
+    public String prizeHandler(@RequestBody Integer id){
+        this.prize = this.prizeList.get(id);
+        return gameService.specialHandler(this.prize, this.teamInPlay, this.teamRepository);
     }
 
-    //this is to get the guesses for chars
+    //this is to get the guesses for chars from dialog Guess
     @PostMapping(path = "/guesschar")
     @ResponseBody
-    public String guessChar(@RequestBody Guess guess){
-        Team team = teamRepository.findTeamByName(guess.getTeamName());
-        return gameService.guessFunction(team, guess.getPrize(), guess.getGuess(),
-                riddle, teamRepository);
+    public String guessChar(@RequestBody Character guessChar){
+        return gameService.guessFunction(this.teamInPlay, this.prize.getValue(), guessChar,
+                this.riddle, this.teamRepository);
     }
 
-    //this is for special stuff
-    @PostMapping(path = "/special")
+    //this is to buy letter (100000 money) from dialog BuyLetter
+    @PostMapping(path = "/marketplace")
     @ResponseBody
-    public String specialCards(){ return null; }
+    public String buyLetter(@RequestBody Boolean isBuy){
+        gameService.buyLetter(isBuy, this.teamInPlay, this.teamRepository);
+        return "Money transfer successful.";
+    }
 
-    //this is to get the guess for the riddle
+    //this is to silence a team from dialog Silencer
+    @PostMapping(path = "/silencer")
+    @ResponseBody
+    public String silenceTeam(@RequestBody Team team){
+        gameService.silenceTeam(team, this.teamRepository);
+        return "Team is silenced.";
+    }
+
+    //write guess auction function!
+    //frontend - guess riddle button click -> dialog Auction. When players say auction is over,
+    //   Auctions sends Post request with list of Guesses. Frontend shows Guess Riddle dialog,
+    //   sends String guess. Takes boolean Response.
+    //backend - receives list, takes the highest bidder, sets teamInPlay and guessMoney. Receives
+    //   String guess, calls guessRiddle(), returns boolean Response.
+
+    //this is to get the auction results from dialog Auction
+    @PostMapping(path = "/auction")
+    @ResponseBody
+    public String getAuctionData(@RequestBody List<Guess> guesses){
+        Guess highestGuess = gameService.getAuctionData(guesses);
+        teamInPlay = highestGuess.getTeam();
+        guessMoney = highestGuess.getMoney();
+        return "Highest bidder set.";
+    }
+
+    //this is to get the guess for the riddle from dialog GuessRiddle
     @PostMapping(path = "/guessriddle")
-    public String guessRiddle(){ return null; }
+    @ResponseBody
+    public Boolean guessRiddle(@RequestBody String guess){
+        return gameService.guessRiddle(guess, this.riddle, this.teamInPlay, this.guessMoney, this.teamRepository);
+    }
 
     //Testing purposes!
     @GetMapping(path="/setup")

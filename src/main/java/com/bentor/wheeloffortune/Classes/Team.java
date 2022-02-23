@@ -20,6 +20,7 @@ public class Team {
     Long id;
     String name;
     int money;
+    Boolean isSilenced = false;
 
     @OneToMany(mappedBy = "team", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     Set<Player> players;

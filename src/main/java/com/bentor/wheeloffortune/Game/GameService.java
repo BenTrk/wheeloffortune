@@ -1,9 +1,7 @@
 package com.bentor.wheeloffortune.Game;
 
-import com.bentor.wheeloffortune.Classes.Player;
-import com.bentor.wheeloffortune.Classes.Prize;
-import com.bentor.wheeloffortune.Classes.Riddle;
-import com.bentor.wheeloffortune.Classes.Team;
+import com.bentor.wheeloffortune.Classes.*;
+import com.bentor.wheeloffortune.Finals.PrizeList;
 import com.bentor.wheeloffortune.Repositories.RiddleRepository;
 import com.bentor.wheeloffortune.Repositories.TeamRepository;
 import org.springframework.stereotype.Service;
@@ -11,10 +9,45 @@ import org.springframework.stereotype.Service;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 @Service
 public class GameService {
+
+    public Team whichTeamPlays(Team teamInPlay, TeamRepository teamRepository){
+        List<Team> teamList = teamRepository.findAll();
+        Long teamInPlayId = teamInPlay.getId();
+        //if we just started the game, or we are at the end of the list
+        if (teamInPlay.getId() == null || teamInPlayId == teamList.size()-1){
+            teamInPlayId = 0L;
+            Team team = teamList.get(Math.toIntExact(teamInPlayId));
+            while (team.getIsSilenced()){
+                teamInPlayId++;
+                team.setIsSilenced(false);
+                teamRepository.save(team);
+                team = teamList.get(Math.toIntExact(teamInPlayId));
+            }
+            return team;
+        }
+        //if we are not at the end of the list
+        if (teamInPlayId < teamList.size()-1) {
+            int i = (int) (teamInPlayId + 1);
+            Optional<Team> optionalTeamInPlay = teamRepository.findById(String.valueOf(i));
+            //isPresent check!
+            Team team = optionalTeamInPlay.get();
+            while (team.getIsSilenced()){
+                i++;
+                team.setIsSilenced(false);
+                teamRepository.save(team);
+                optionalTeamInPlay = teamRepository.findById(String.valueOf(i));
+                team = optionalTeamInPlay.get();
+            }
+            return team;
+        }
+        //don't know how could this happen, but okay.
+        return null;
+    }
 
     public void readRiddles(RiddleRepository riddleRepository) throws IOException {
         //read riddle from file - put content in MySQL
@@ -59,6 +92,7 @@ public class GameService {
     }
 
     public Player createPlayer(TeamRepository teamRepository, String playerName, String teamName){
+        //in realtime, use ID here. Send team list to frontend, get id of selected team.
         Team team = teamRepository.findTeamByName(teamName);
         return new Player(playerName, team);
     }
@@ -84,57 +118,14 @@ public class GameService {
     }
 
     public ArrayList<Prize> prizeInitialize(){
-        ArrayList<Prize> prizeList = new ArrayList<>();
-        Prize fiveThousand = new Prize(5000, '-');
-        Prize tenThousand = new Prize(10000, '-');
-        Prize twentyFiveThousand = new Prize(25000, '-');
-        Prize fiftyThousand = new Prize(50000, '-');
-        Prize hundredThousand = new Prize(100000, '-');
-        Prize twoHundredAndFiftyThousand = new Prize(250000, '-');
-        Prize fiveHundredThousand = new Prize(500000, '-');
-        Prize million = new Prize(1000000, '-');
-        Prize bankrupt = new Prize(0, 'b');
-        Prize looseHalf = new Prize(0, 'h');
-        Prize doubleMoney = new Prize(0, 'd');
-        Prize buyLetter = new Prize(0, 'l');
-        Prize buyTeamOut = new Prize(0, 'o');
-        Prize nothing = new Prize(0, 'n');
-        prizeList.add(fiveThousand);
-        prizeList.add(fiveThousand);
-        prizeList.add(fiveThousand);
-        prizeList.add(fiveThousand);
-        prizeList.add(tenThousand);
-        prizeList.add(tenThousand);
-        prizeList.add(tenThousand);
-        prizeList.add(tenThousand);
-        prizeList.add(twentyFiveThousand);
-        prizeList.add(twentyFiveThousand);
-        prizeList.add(twentyFiveThousand);
-        prizeList.add(fiftyThousand);
-        prizeList.add(fiftyThousand);
-        prizeList.add(fiftyThousand);
-        prizeList.add(hundredThousand);
-        prizeList.add(hundredThousand);
-        prizeList.add(twoHundredAndFiftyThousand);
-        prizeList.add(fiveHundredThousand);
-        prizeList.add(million);
-        prizeList.add(bankrupt);
-        prizeList.add(looseHalf);
-        prizeList.add(looseHalf);
-        prizeList.add(doubleMoney);
-        prizeList.add(doubleMoney);
-        prizeList.add(buyLetter);
-        prizeList.add(buyLetter);
-        prizeList.add(buyTeamOut);
-        prizeList.add(buyTeamOut);
-        prizeList.add(nothing);
-        return prizeList;
+        return PrizeList.prizeInitialize();
     }
 
     //on frontend, use v-if!
     public String specialHandler(Prize prize, Team team, TeamRepository teamRepository){
         switch(prize.getSpecial()){
             case '-':
+                //get guess, use guessFunction
                 return String.valueOf(prize.getValue());
             case 'b':
                 team.setMoney(0);
@@ -152,14 +143,51 @@ public class GameService {
                 //next team comes
                 return "Double";
             case 'l':
+                //set prize of letter! Get bool Y/N to see if team
+                //buys letter or not, count money, quizmaster will send the letter for it.
                 return "Marketplace";
             case 'o':
+                //get silenced team --- next team comes function must consider list of silenced teams.
                 return "Silencer";
             case 'n':
                 //next team comes
                 return "Nothing";
         }
         return null;
+    }
+
+    public void buyLetter(Boolean isBuy, Team team, TeamRepository teamRepository) {
+        if (isBuy){
+            team.setMoney(team.getMoney()-100000);
+            teamRepository.save(team);
+        }
+    }
+
+    public void silenceTeam(Team team, TeamRepository teamRepository) {
+        team.setIsSilenced(true);
+        teamRepository.save(team);
+    }
+
+    public Boolean guessRiddle(String guess, String riddle, Team team, Integer guessMoney, TeamRepository teamRepository) {
+        if (guess.equalsIgnoreCase(riddle)){
+            team.setMoney(team.getMoney()-guessMoney);
+            teamRepository.save(team);
+            return true;
+        } else {
+            team.setMoney(team.getMoney()-guessMoney);
+            teamRepository.save(team);
+            return false;
+        }
+    }
+
+    public Guess getAuctionData(List<Guess> guesses) {
+        Guess highestGuess = guesses.get(0);
+        for(Guess guess : guesses){
+            if (guess.getMoney() > highestGuess.getMoney()){
+                highestGuess = guess;
+            }
+        }
+        return highestGuess;
     }
 }
 
