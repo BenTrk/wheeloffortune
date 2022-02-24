@@ -39,6 +39,7 @@ public class PrizeList {
         prizeList.add(hundredThousand);
         prizeList.add(hundredThousand);
         prizeList.add(twoHundredAndFiftyThousand);
+        prizeList.add(twoHundredAndFiftyThousand);
         prizeList.add(fiveHundredThousand);
         prizeList.add(million);
         prizeList.add(bankrupt);
