@@ -2,6 +2,7 @@ package com.bentor.wheeloffortune.Game;
 
 import com.bentor.wheeloffortune.Classes.Guess;
 import com.bentor.wheeloffortune.Classes.Prize;
+import com.bentor.wheeloffortune.Classes.PrizeMoney;
 import com.bentor.wheeloffortune.Classes.Team;
 import com.bentor.wheeloffortune.Repositories.PlayerRepository;
 import com.bentor.wheeloffortune.Repositories.RiddleRepository;
@@ -23,6 +24,7 @@ public class GameController {
     private final TeamRepository teamRepository;
     private final PlayerRepository playerRepository;
     private String riddle;
+    private String codedRiddle;
     private final ArrayList<Prize> prizeList;
     private Team teamInPlay;
     private Prize prize;
@@ -38,16 +40,10 @@ public class GameController {
         this.playerRepository = playerRepository;
 
         gameService.readRiddles(riddleRepository);
-        this.riddle = gameService.getRiddle(riddleRepository);
         this.prizeList = gameService.prizeInitialize();
     }
 
-    @GetMapping(path = "/prize")
-    public ArrayList<Prize> getPrizes(){
-        Collections.shuffle(this.prizeList);
-        return this.prizeList;
-    }
-
+    //this may be not necessary
     @GetMapping(path = "/newriddle")
     public String getNewRiddle() {
         this.riddle = gameService.getRiddle(this.riddleRepository);
@@ -57,7 +53,9 @@ public class GameController {
     //when start and when new riddle, getTeamInPlay() should be called!
     @GetMapping(path = "/game")
     public String gameLogic() {
-        return gameService.turnRiddleToCode(this.riddle);
+        this.riddle = gameService.getRiddle(this.riddleRepository);
+        this.codedRiddle = gameService.turnRiddleToCode(this.riddle);
+        return this.codedRiddle;
     }
 
     //this is to handle which team can play
@@ -83,17 +81,32 @@ public class GameController {
     //this is to handle incoming ids from prize buttons
     @PostMapping(path = "/prizehandler")
     @ResponseBody
-    public String prizeHandler(@RequestBody Integer id){
-        this.prize = this.prizeList.get(id);
+    public List<Boolean> prizeHandler(@RequestBody String id){
+        //Gets 0= in body. Dont know why. Something with JSON maybe?
+        String realIdString = id.substring(0, id.length()-1);
+        int realId = Integer.parseInt(realIdString);
+        Collections.shuffle(this.prizeList);
+        this.prize = this.prizeList.get(realId);
         return gameService.specialHandler(this.prize, this.teamInPlay, this.teamRepository);
+    }
+
+    //This is to send the money value if wheeloffortune shows money
+    @GetMapping(path = "/getmoney")
+    public Integer getMoney(){
+        return this.prize.getValue();
     }
 
     //this is to get the guesses for chars from dialog Guess
     @PostMapping(path = "/guesschar")
     @ResponseBody
-    public String guessChar(@RequestBody Character guessChar){
-        return gameService.guessFunction(this.teamInPlay, this.prize.getValue(), guessChar,
-                this.riddle, this.teamRepository);
+    public PrizeMoney guessChar(@RequestBody String guessChar){
+        System.out.println(guessChar);
+        Character c = guessChar.charAt(0);
+        System.out.println(c);
+        PrizeMoney pm = gameService.guessFunction(this.teamInPlay, this.prize.getValue(), c,
+                this.riddle, this.codedRiddle, this.teamRepository);
+        this.codedRiddle = pm.getRiddle();
+        return pm;
     }
 
     //this is to buy letter (100000 money) from dialog BuyLetter
@@ -139,16 +152,18 @@ public class GameController {
     //Testing purposes!
     @GetMapping(path="/setup")
     public String setTeamAndPlayers(){
-        teamRepository.save(gameService.createTeam("Csapatnév"));
-        teamRepository.save(gameService.createTeam("Csapatnév 2"));
-        teamRepository.save(gameService.createTeam("Csapatnév 3"));
-        playerRepository.save(gameService.createPlayer(teamRepository, "Béla", "Csapatnév"));
-        playerRepository.save(gameService.createPlayer(teamRepository, "Géza", "Csapatnév"));
-        playerRepository.save(gameService.createPlayer(teamRepository, "Kató", "Csapatnév"));
-        playerRepository.save(gameService.createPlayer(teamRepository, "Sanyi", "Csapatnév 2"));
-        playerRepository.save(gameService.createPlayer(teamRepository, "Bandi", "Csapatnév 2"));
-        playerRepository.save(gameService.createPlayer(teamRepository, "Mari", "Csapatnév 3"));
-        playerRepository.save(gameService.createPlayer(teamRepository, "Juli", "Csapatnév 3"));
+        if (teamRepository.findAll().size() < 1) {
+            teamRepository.save(gameService.createTeam("Csapatnév"));
+            teamRepository.save(gameService.createTeam("Csapatnév 2"));
+            teamRepository.save(gameService.createTeam("Csapatnév 3"));
+            playerRepository.save(gameService.createPlayer(teamRepository, "Béla", "Csapatnév"));
+            playerRepository.save(gameService.createPlayer(teamRepository, "Géza", "Csapatnév"));
+            playerRepository.save(gameService.createPlayer(teamRepository, "Kató", "Csapatnév"));
+            playerRepository.save(gameService.createPlayer(teamRepository, "Sanyi", "Csapatnév 2"));
+            playerRepository.save(gameService.createPlayer(teamRepository, "Bandi", "Csapatnév 2"));
+            playerRepository.save(gameService.createPlayer(teamRepository, "Mari", "Csapatnév 3"));
+            playerRepository.save(gameService.createPlayer(teamRepository, "Juli", "Csapatnév 3"));
+        }
         return "Teams and players set.";
     }
 }

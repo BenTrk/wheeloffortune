@@ -11,37 +11,42 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class GameService {
 
     public Team whichTeamPlays(Team teamInPlay, TeamRepository teamRepository){
-        List<Team> teamList = teamRepository.findAll();
         Long teamInPlayId;
+        List<Team> teamList = teamRepository.findAll();
         try{
             teamInPlayId = teamInPlay.getId();
         } catch (NullPointerException ex){ teamInPlayId = -1L; }
         //if we just started the game, or we are at the end of the list
-        if (teamInPlayId == -1L || teamInPlayId == teamList.size()-1){
+        if (teamInPlayId == -1L || teamInPlayId.equals(teamList.get(teamList.size() - 1).getId())){
             teamInPlayId = 0L;
-            Team team = teamList.get(Math.toIntExact(teamInPlayId));
+            Team t = teamList.get(Math.toIntExact(teamInPlayId));
+            Team team = teamRepository.findById(t.getId()).orElse(null);
+
             while (team.getIsSilenced()){
-                teamInPlayId++;
+                teamInPlayId = teamRepository.findById(team.getId()).orElse(null).getId();
                 team.setIsSilenced(false);
                 teamRepository.save(team);
-                if (teamInPlayId < teamList.size()-1){
-                team = teamList.get(Math.toIntExact(teamInPlayId));
+                if (teamInPlayId < teamList.get(teamList.size()-1).getId()){
+                team = teamRepository.findById(teamInPlayId).orElse(null);
                 } else {
                     teamInPlayId = 0L;
-                    team = teamList.get(Math.toIntExact(teamInPlayId));
+                    t = teamList.get(Math.toIntExact(teamInPlayId));
+                    team = teamRepository.findById(t.getId()).orElse(null);
                 }
             }
             return team;
         }
         //if we are not at the end of the list
         else {
-            int i = (int) (teamInPlayId + 1);
-            Optional<Team> optionalTeamInPlay = teamRepository.findById(String.valueOf(i));
+            Long i = teamInPlay.getId()+1;
+            Optional<Team> optionalTeamInPlay = teamRepository.findById(i);
             //isPresent check!
             Team team = optionalTeamInPlay.orElse(null);
             //Not elegant, but I will leave this as is. Can cause nullpointexception, but I know that it
@@ -50,13 +55,13 @@ public class GameService {
                 i++;
                 team.setIsSilenced(false);
                 teamRepository.save(team);
-                if (i < teamList.size()-1) {
-                    optionalTeamInPlay = teamRepository.findById(String.valueOf(i));
+                if (i < teamList.get(teamList.size()-1).getId()) {
+                    optionalTeamInPlay = teamRepository.findById(i);
                     team = optionalTeamInPlay.orElse(null);
                 } else {
-                    i = 0;
-                    optionalTeamInPlay = teamRepository.findById(String.valueOf(i));
-                    team = optionalTeamInPlay.orElse(null);
+                    i = 0L;
+                    Team t = teamList.get(Math.toIntExact(teamInPlayId));
+                    team = teamRepository.findById(t.getId()).orElse(null);
                 }
             }
             return team;
@@ -111,15 +116,16 @@ public class GameService {
         return new Player(playerName, team);
     }
 
-    public String guessFunction(Team team, int prize, Character guess, String riddle,
+    public PrizeMoney guessFunction(Team team, int prize, Character guess, String riddle, String codedRiddle,
                                 TeamRepository teamRepository) {
         char[] charSequence = riddle.toCharArray();
+        char[] codedCharSequence = codedRiddle.toCharArray();
         Character g = Character.toLowerCase(guess);
         int counter = 0;
         for (int i = 0; i < charSequence.length; i++) {
             Character c = Character.toLowerCase(charSequence[i]);
             if (!c.equals(g) && Character.isLetter(c)) {
-                c = '_';
+                c = codedCharSequence[i];
             } else if (c.equals(g) && Character.isLetter(c)){
                 counter++;
             }
@@ -127,45 +133,73 @@ public class GameService {
         }
         team.setMoney(prize*counter);
         teamRepository.save(team);
+
+        PrizeMoney prizeMoney = new PrizeMoney(counter, prize*counter, String.valueOf(charSequence));
         //next team comes
-        return String.valueOf(charSequence);
+        return prizeMoney;
     }
 
     public ArrayList<Prize> prizeInitialize(){
         return PrizeList.prizeInitialize();
     }
 
-    //on frontend, use v-if!
-    public String specialHandler(Prize prize, Team team, TeamRepository teamRepository){
+    //on frontend, use v-method, call dialog shower :) in axios or use if in script!
+    public List<Boolean> specialHandler(Prize prize, Team team, TeamRepository teamRepository){
+        //for readability, added names to booleans - on frontend, ids must be used with dialogs!
+        Boolean money = false, bankrupt  = false, fiftyFifty  = false, doubleMoney = false,
+                marketplace = false, silencer = false, nothing = false;
+        List<Boolean> allMoneyBooleans;
         switch(prize.getSpecial()){
             case '-':
                 //get guess, use guessFunction
-                return String.valueOf(prize.getValue());
+                //return boolean, and create function to handle the getMoney.
+                money = true;
+                allMoneyBooleans = Stream.of(money, bankrupt, fiftyFifty, doubleMoney, marketplace, silencer, nothing)
+                        .collect(Collectors.toList());
+                return allMoneyBooleans;
             case 'b':
+                bankrupt = true;
+                allMoneyBooleans = Stream.of(money, bankrupt, fiftyFifty, doubleMoney, marketplace, silencer, nothing)
+                        .collect(Collectors.toList());
                 team.setMoney(0);
                 teamRepository.save(team);
                 //next team comes
-                return "Bankrupt";
+                return allMoneyBooleans;
             case 'h':
+                fiftyFifty = true;
+                allMoneyBooleans = Stream.of(money, bankrupt, fiftyFifty, doubleMoney, marketplace, silencer, nothing)
+                        .collect(Collectors.toList());
                 team.setMoney(team.getMoney()/2);
                 teamRepository.save(team);
                 //next team comes
-                return "50/50";
+                return allMoneyBooleans;
             case 'd':
+                doubleMoney = true;
+                allMoneyBooleans = Stream.of(money, bankrupt, fiftyFifty, doubleMoney, marketplace, silencer, nothing)
+                        .collect(Collectors.toList());
                 team.setMoney(team.getMoney()*2);
                 teamRepository.save(team);
                 //next team comes
-                return "Double";
+                return allMoneyBooleans;
             case 'l':
+                marketplace = true;
+                allMoneyBooleans = Stream.of(money, bankrupt, fiftyFifty, doubleMoney, marketplace, silencer, nothing)
+                        .collect(Collectors.toList());
                 //set prize of letter! Get bool Y/N to see if team
                 //buys letter or not, count money, quizmaster will send the letter for it.
-                return "Marketplace";
+                return allMoneyBooleans;
             case 'o':
+                silencer = true;
+                allMoneyBooleans = Stream.of(money, bankrupt, fiftyFifty, doubleMoney, marketplace, silencer, nothing)
+                        .collect(Collectors.toList());
                 //get silenced team --- next team comes function must consider list of silenced teams.
-                return "Silencer";
+                return allMoneyBooleans;
             case 'n':
+                nothing = true;
+                allMoneyBooleans = Stream.of(money, bankrupt, fiftyFifty, doubleMoney, marketplace, silencer, nothing)
+                        .collect(Collectors.toList());
                 //next team comes
-                return "Nothing";
+                return allMoneyBooleans;
         }
         return null;
     }

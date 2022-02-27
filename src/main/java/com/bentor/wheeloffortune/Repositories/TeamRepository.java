@@ -4,8 +4,6 @@ import com.bentor.wheeloffortune.Classes.Team;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-
-public interface TeamRepository extends JpaRepository<Team, String> {
+public interface TeamRepository extends JpaRepository<Team, Long> {
     Team findTeamByName(@Param("name") String teamName);
 }
