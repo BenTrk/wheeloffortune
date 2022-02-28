@@ -110,11 +110,9 @@ public class GameController {
     }
 
     //this is to buy letter (100000 money) from dialog BuyLetter
-    @PostMapping(path = "/marketplace")
-    @ResponseBody
-    public String buyLetter(@RequestBody Boolean isBuy){
-        gameService.buyLetter(isBuy, this.teamInPlay, this.teamRepository);
-        return "Money transfer successful.";
+    @GetMapping(path = "/marketplace")
+    public String buyLetter(){
+        return gameService.buyLetter(this.teamInPlay, this.teamRepository);
     }
 
     //this is to silence a team from dialog Silencer

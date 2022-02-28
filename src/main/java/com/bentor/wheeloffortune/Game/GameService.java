@@ -126,12 +126,12 @@ public class GameService {
             Character c = Character.toLowerCase(charSequence[i]);
             if (!c.equals(g) && Character.isLetter(c)) {
                 c = codedCharSequence[i];
-            } else if (c.equals(g) && Character.isLetter(c)){
+            } else if (c.equals(g) && Character.isLetter(c) && !c.equals(codedCharSequence[i])){
                 counter++;
             }
             charSequence[i] = c;
         }
-        team.setMoney(prize*counter);
+        team.setMoney(team.getMoney() + prize*counter);
         teamRepository.save(team);
 
         PrizeMoney prizeMoney = new PrizeMoney(counter, prize*counter, String.valueOf(charSequence));
@@ -204,11 +204,12 @@ public class GameService {
         return null;
     }
 
-    public void buyLetter(Boolean isBuy, Team team, TeamRepository teamRepository) {
-        if (isBuy){
-            team.setMoney(team.getMoney()-100000);
+    public String buyLetter(Team team, TeamRepository teamRepository) {
+        if(team.getMoney() > 99999) {
+            team.setMoney(team.getMoney() - 100000);
             teamRepository.save(team);
-        }
+            return "Tell the others if you received the secret.";
+        } else return "I need more money for this information.";
     }
 
     public void silenceTeam(Team team, TeamRepository teamRepository) {
