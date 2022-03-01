@@ -33,14 +33,16 @@ public class GameService {
                 teamInPlayId = teamRepository.findById(team.getId()).orElse(null).getId();
                 team.setIsSilenced(false);
                 teamRepository.save(team);
+                teamInPlayId++;
                 if (teamInPlayId < teamList.get(teamList.size()-1).getId()){
-                team = teamRepository.findById(teamInPlayId).orElse(null);
+                    team = teamRepository.findById(teamInPlayId).orElse(null);
                 } else {
                     teamInPlayId = 0L;
                     t = teamList.get(Math.toIntExact(teamInPlayId));
                     team = teamRepository.findById(t.getId()).orElse(null);
                 }
             }
+            System.out.println("last team in list: " + team.getName() + " " + team.getIsSilenced());
             return team;
         }
         //if we are not at the end of the list
@@ -52,18 +54,22 @@ public class GameService {
             //Not elegant, but I will leave this as is. Can cause nullpointexception, but I know that it
             //wont. The id I provide above MUST be a valid team id - or the problem is not here.
             while (team.getIsSilenced()){
-                i++;
                 team.setIsSilenced(false);
                 teamRepository.save(team);
+                i++;
+                System.out.println("team is silenced: " + team.getName() + "i: " + i);
                 if (i < teamList.get(teamList.size()-1).getId()) {
                     optionalTeamInPlay = teamRepository.findById(i);
                     team = optionalTeamInPlay.orElse(null);
+                    System.out.println("teamid is less than the last teamid: " + team.getName());
                 } else {
                     i = 0L;
-                    Team t = teamList.get(Math.toIntExact(teamInPlayId));
+                    Team t = teamList.get(Math.toIntExact(i));
                     team = teamRepository.findById(t.getId()).orElse(null);
+                    System.out.println("teamid is the last team in list: " + team.getName());
                 }
             }
+            System.out.println("not last team in list: " + team.getName());
             return team;
         }
     }
@@ -215,6 +221,7 @@ public class GameService {
     public void silenceTeam(Team team, TeamRepository teamRepository) {
         team.setIsSilenced(true);
         teamRepository.save(team);
+        System.out.println(team.getIsSilenced());
     }
 
     public Boolean guessRiddle(String guess, String riddle, Team team, Integer guessMoney, TeamRepository teamRepository) {
