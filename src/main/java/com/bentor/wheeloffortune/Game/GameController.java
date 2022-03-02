@@ -29,6 +29,7 @@ public class GameController {
     private Team teamInPlay;
     private Prize prize;
     private Integer guessMoney;
+    private Guess highestGuess;
 
     @Autowired
     public GameController(GameService gameService, RiddleRepository riddleRepository,
@@ -123,18 +124,14 @@ public class GameController {
         return "Team is silenced.";
     }
 
-    //write guess auction function!
-    //frontend - guess riddle button click -> dialog Auction. When players say auction is over,
-    //   Auctions sends Post request with list of Guesses. Frontend shows Guess Riddle dialog,
-    //   sends String guess. Takes boolean Response.
-    //backend - receives list, takes the highest bidder, sets teamInPlay and guessMoney. Receives
-    //   String guess, calls guessRiddle(), returns boolean Response.
-
     //this is to get the auction results from dialog Auction
     @PostMapping(path = "/auction")
     @ResponseBody
-    public String getAuctionData(@RequestBody List<Guess> guesses){
-        Guess highestGuess = gameService.getAuctionData(guesses);
+    public String getAuctionData(@RequestBody Guess guess){
+        //get string, and convert it to guess
+        if (gameService.getAuctionData(guess, teamRepository) != null) {
+            this.highestGuess = gameService.getAuctionData(guess, teamRepository);
+        }
         teamInPlay = highestGuess.getTeam();
         guessMoney = highestGuess.getMoney();
         return "Highest bidder set.";

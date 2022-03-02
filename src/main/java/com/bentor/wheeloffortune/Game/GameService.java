@@ -7,15 +7,13 @@ import com.bentor.wheeloffortune.Repositories.TeamRepository;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
 public class GameService {
+    List<Guess> guessList = new ArrayList<>();
 
     public Team whichTeamPlays(Team teamInPlay, TeamRepository teamRepository){
         Long teamInPlayId;
@@ -225,6 +223,7 @@ public class GameService {
     }
 
     public Boolean guessRiddle(String guess, String riddle, Team team, Integer guessMoney, TeamRepository teamRepository) {
+        this.guessList.clear();
         if (guess.equalsIgnoreCase(riddle)){
             team.setMoney(team.getMoney()-guessMoney);
             teamRepository.save(team);
@@ -236,14 +235,20 @@ public class GameService {
         }
     }
 
-    public Guess getAuctionData(List<Guess> guesses) {
-        Guess highestGuess = guesses.get(0);
-        for(Guess guess : guesses){
-            if (guess.getMoney() > highestGuess.getMoney()){
-                highestGuess = guess;
+    public Guess getAuctionData(Guess guess, TeamRepository teamRepository) {
+        Team guessingTeam = teamRepository.findById(guess.getTeam().getId()).orElse(null);
+        if (guess.getMoney() < guessingTeam.getMoney()) {
+            Guess highestGuess = guess;
+            this.guessList.add(guess);
+            guessingTeam.setMoney(guessingTeam.getMoney() - guess.getMoney());
+            for (Guess g : this.guessList) {
+                if (g.getMoney() > highestGuess.getMoney()) {
+                    highestGuess = g;
+                }
             }
+            return highestGuess;
         }
-        return highestGuess;
+        return null;
     }
 }
 
