@@ -1,9 +1,6 @@
 package com.bentor.wheeloffortune.Game;
 
-import com.bentor.wheeloffortune.Classes.Guess;
-import com.bentor.wheeloffortune.Classes.Prize;
-import com.bentor.wheeloffortune.Classes.PrizeMoney;
-import com.bentor.wheeloffortune.Classes.Team;
+import com.bentor.wheeloffortune.Classes.*;
 import com.bentor.wheeloffortune.Repositories.PlayerRepository;
 import com.bentor.wheeloffortune.Repositories.RiddleRepository;
 import com.bentor.wheeloffortune.Repositories.TeamRepository;
@@ -56,6 +53,11 @@ public class GameController {
     public String gameLogic() {
         this.riddle = gameService.getRiddle(this.riddleRepository);
         this.codedRiddle = gameService.turnRiddleToCode(this.riddle);
+        return this.codedRiddle;
+    }
+
+    @GetMapping(path = "/currentriddle")
+    public String currentRiddle(){
         return this.codedRiddle;
     }
 
@@ -129,19 +131,33 @@ public class GameController {
     @ResponseBody
     public String getAuctionData(@RequestBody Guess guess){
         //get string, and convert it to guess
-        if (gameService.getAuctionData(guess, teamRepository) != null) {
-            this.highestGuess = gameService.getAuctionData(guess, teamRepository);
+        Guess g = gameService.getAuctionData(guess, teamRepository);
+        if (g != null) {
+            this.highestGuess = g;
+            teamInPlay = highestGuess.getTeam();
+            guessMoney = highestGuess.getMoney();
         }
-        teamInPlay = highestGuess.getTeam();
-        guessMoney = highestGuess.getMoney();
         return "Highest bidder set.";
     }
+
+    @GetMapping(path = "/highestbid")
+    public Team getHighestBidderTeam() { return this.highestGuess.getTeam(); }
 
     //this is to get the guess for the riddle from dialog GuessRiddle
     @PostMapping(path = "/guessriddle")
     @ResponseBody
-    public Boolean guessRiddle(@RequestBody String guess){
-        return gameService.guessRiddle(guess, this.riddle, this.teamInPlay, this.guessMoney, this.teamRepository);
+    public String guessRiddle(@RequestBody RiddleGuess guess){
+        System.out.println(guess.getGuess());
+        Boolean isGuessed = gameService.guessRiddle(guess.getGuess(), this.riddle, this.teamInPlay, this.guessMoney, this.teamRepository);
+        String result;
+        if (isGuessed){
+            this.riddle = gameService.getRiddle(this.riddleRepository);
+            this.codedRiddle = gameService.turnRiddleToCode(this.riddle);
+            this.highestGuess = null;
+            return "Congratulations!";
+        } else {
+            return "No, sorry, but no.";
+        }
     }
 
     //Testing purposes!

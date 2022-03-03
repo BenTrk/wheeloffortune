@@ -32,7 +32,7 @@ public class GameService {
                 team.setIsSilenced(false);
                 teamRepository.save(team);
                 teamInPlayId++;
-                if (teamInPlayId < teamList.get(teamList.size()-1).getId()){
+                if (teamInPlayId <= teamList.get(teamList.size()-1).getId()){
                     team = teamRepository.findById(teamInPlayId).orElse(null);
                 } else {
                     teamInPlayId = 0L;
@@ -56,7 +56,7 @@ public class GameService {
                 teamRepository.save(team);
                 i++;
                 System.out.println("team is silenced: " + team.getName() + "i: " + i);
-                if (i < teamList.get(teamList.size()-1).getId()) {
+                if (i <= teamList.get(teamList.size()-1).getId()) {
                     optionalTeamInPlay = teamRepository.findById(i);
                     team = optionalTeamInPlay.orElse(null);
                     System.out.println("teamid is less than the last teamid: " + team.getName());
@@ -85,6 +85,7 @@ public class GameService {
     }
 
     public String getRiddle(RiddleRepository riddleRepository) {
+        //write function for rounds.
         List<Riddle> riddlesList = riddleRepository.findRiddleByWasUsed(false);
         String riddle;
         //generate a random number and get the random riddle, then remove it from the list so it wont be assigned again.
@@ -236,11 +237,15 @@ public class GameService {
     }
 
     public Guess getAuctionData(Guess guess, TeamRepository teamRepository) {
+        System.out.println("Guessmoney: " + guess.getMoney());
         Team guessingTeam = teamRepository.findById(guess.getTeam().getId()).orElse(null);
         if (guess.getMoney() < guessingTeam.getMoney()) {
             Guess highestGuess = guess;
             this.guessList.add(guess);
+            System.out.println("Team money: " + guessingTeam.getMoney() + " Guess money: " + guess.getMoney()
+            + "Result: " + (guessingTeam.getMoney() - guess.getMoney()));
             guessingTeam.setMoney(guessingTeam.getMoney() - guess.getMoney());
+            teamRepository.save(guessingTeam);
             for (Guess g : this.guessList) {
                 if (g.getMoney() > highestGuess.getMoney()) {
                     highestGuess = g;
