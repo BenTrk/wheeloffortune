@@ -84,19 +84,21 @@ public class GameService {
         }
     }
 
-    public String getRiddle(RiddleRepository riddleRepository) {
+    public String getRiddle(RiddleRepository riddleRepository, Integer round) {
         //write function for rounds.
-        List<Riddle> riddlesList = riddleRepository.findRiddleByWasUsed(false);
-        String riddle;
-        //generate a random number and get the random riddle, then remove it from the list so it wont be assigned again.
-        Random random = new Random();
-        int maxRand = riddlesList.size();
-        int rnd = random.nextInt(maxRand);
-        riddle = riddlesList.get(rnd).getRiddle();
-        Riddle currentRiddle = riddlesList.get(rnd);
-        currentRiddle.setWasUsed(true);
-        riddleRepository.save(currentRiddle);
-        return riddle;
+        if (round < 5) {
+            List<Riddle> riddlesList = riddleRepository.findRiddleByWasUsed(false);
+            String riddle;
+            //generate a random number and get the random riddle, then remove it from the list so it wont be assigned again.
+            Random random = new Random();
+            int maxRand = riddlesList.size();
+            int rnd = random.nextInt(maxRand);
+            riddle = riddlesList.get(rnd).getRiddle();
+            Riddle currentRiddle = riddlesList.get(rnd);
+            currentRiddle.setWasUsed(true);
+            riddleRepository.save(currentRiddle);
+            return riddle;
+        } else return "End";
     }
 
     public String turnRiddleToCode(String riddle){
@@ -228,6 +230,7 @@ public class GameService {
         if (guess.equalsIgnoreCase(riddle)){
             team.setMoney(team.getMoney()-guessMoney);
             teamRepository.save(team);
+            //what to do with other team's money? :)
             return true;
         } else {
             team.setMoney(team.getMoney()-guessMoney);
@@ -254,6 +257,24 @@ public class GameService {
             return highestGuess;
         }
         return null;
+    }
+
+    public List<Team> getWinner(TeamRepository teamRepository){
+        List<Team> teamsEndGame = teamRepository.findAll();
+        List<Team> winnersList = new ArrayList<>();
+        Team winner = teamsEndGame.get(0);
+        winnersList.add(winner);
+        for (int i = 1; i < teamsEndGame.size(); i++){
+            Team t = teamsEndGame.get(i);
+            if (t.getMoney() == winner.getMoney()){
+                winnersList.add(t);
+            } else if (t.getMoney() > winner.getMoney()){
+                winnersList.clear();
+                winner = t;
+                winnersList.add(winner);
+            }
+        }
+        return winnersList;
     }
 }
 

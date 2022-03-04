@@ -21,6 +21,7 @@ public class Team {
     Long id;
     String name;
     int money = 0;
+    int roundMoney = 0;
     Boolean isSilenced = false;
 
     @OneToMany(mappedBy = "team", fetch = FetchType.LAZY, cascade = CascadeType.ALL)

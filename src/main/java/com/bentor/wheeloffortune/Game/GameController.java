@@ -27,6 +27,7 @@ public class GameController {
     private Prize prize;
     private Integer guessMoney;
     private Guess highestGuess;
+    private Integer round;
 
     @Autowired
     public GameController(GameService gameService, RiddleRepository riddleRepository,
@@ -39,20 +40,28 @@ public class GameController {
 
         gameService.readRiddles(riddleRepository);
         this.prizeList = gameService.prizeInitialize();
+        this.round = 0;
     }
 
     //this may be not necessary
     @GetMapping(path = "/newriddle")
     public String getNewRiddle() {
-        this.riddle = gameService.getRiddle(this.riddleRepository);
+        this.riddle = gameService.getRiddle(this.riddleRepository, this.round);
+        if (this.riddle.equals("End")){
+            return "End";
+        } else
         return "New riddle set.";
     }
     //this is to show the riddle
     //when start and when new riddle, getTeamInPlay() should be called!
     @GetMapping(path = "/game")
     public String gameLogic() {
-        this.riddle = gameService.getRiddle(this.riddleRepository);
+        this.riddle = gameService.getRiddle(this.riddleRepository, this.round);
         this.codedRiddle = gameService.turnRiddleToCode(this.riddle);
+        System.out.println("Equals? " + this.riddle.equalsIgnoreCase("End"));
+        if (this.riddle.equalsIgnoreCase("End")){
+            return "End";
+        } else
         return this.codedRiddle;
     }
 
@@ -149,15 +158,23 @@ public class GameController {
     public String guessRiddle(@RequestBody RiddleGuess guess){
         System.out.println(guess.getGuess());
         Boolean isGuessed = gameService.guessRiddle(guess.getGuess(), this.riddle, this.teamInPlay, this.guessMoney, this.teamRepository);
-        String result;
         if (isGuessed){
-            this.riddle = gameService.getRiddle(this.riddleRepository);
+            this.riddle = gameService.getRiddle(this.riddleRepository, this.round);
+            this.round++;
             this.codedRiddle = gameService.turnRiddleToCode(this.riddle);
             this.highestGuess = null;
+            if (this.riddle.equals("End")){
+                return "End";
+            } else
             return "Congratulations!";
         } else {
             return "No, sorry, but no.";
         }
+    }
+
+    @GetMapping(path = "/winner")
+    public List<Team> getWinner() {
+        return gameService.getWinner(teamRepository);
     }
 
     //Testing purposes!
