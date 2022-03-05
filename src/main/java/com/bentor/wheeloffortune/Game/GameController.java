@@ -46,28 +46,37 @@ public class GameController {
     //this may be not necessary
     @GetMapping(path = "/newriddle")
     public String getNewRiddle() {
-        this.riddle = gameService.getRiddle(this.riddleRepository, this.round);
-        if (this.riddle.equals("End")){
+        if (this.round == 5){
             return "End";
-        } else
-        return "New riddle set.";
+        } else {
+            this.riddle = gameService.getRiddle(this.riddleRepository);
+            return "New riddle set.";
+        }
     }
     //this is to show the riddle
-    //when start and when new riddle, getTeamInPlay() should be called!
+    //Failsafe mode should be: frontend does not call this, only currentRiddle;
+    //  this.riddle is set when GameController is initiated
+    //  bonus: round should be handled as computed, and when GameController is initiated,
+    //  this.round = (riddleRepository.findall where wasUsed = true).count
     @GetMapping(path = "/game")
     public String gameLogic() {
-        this.riddle = gameService.getRiddle(this.riddleRepository, this.round);
-        this.codedRiddle = gameService.turnRiddleToCode(this.riddle);
-        System.out.println("Equals? " + this.riddle.equalsIgnoreCase("End"));
-        if (this.riddle.equalsIgnoreCase("End")){
+        if (this.round == 5){
             return "End";
-        } else
-        return this.codedRiddle;
+        } else {
+            this.riddle = gameService.getRiddle(this.riddleRepository);
+            this.codedRiddle = gameService.turnRiddleToCode(this.riddle);
+            System.out.println("Equals? " + this.riddle.equalsIgnoreCase("End"));
+            return this.codedRiddle;
+        }
     }
 
     @GetMapping(path = "/currentriddle")
     public String currentRiddle(){
-        return this.codedRiddle;
+        if (this.round == 5){
+            return this.riddle;
+        } else {
+            return this.codedRiddle;
+        }
     }
 
     //this is to handle which team can play
@@ -157,16 +166,21 @@ public class GameController {
     @ResponseBody
     public String guessRiddle(@RequestBody RiddleGuess guess){
         System.out.println(guess.getGuess());
-        Boolean isGuessed = gameService.guessRiddle(guess.getGuess(), this.riddle, this.teamInPlay, this.guessMoney, this.teamRepository);
+        Boolean isGuessed = gameService.guessRiddle(guess.getGuess(),this.codedRiddle, this.riddle, this.teamInPlay, this.guessMoney, this.teamRepository);
         if (isGuessed){
-            this.riddle = gameService.getRiddle(this.riddleRepository, this.round);
             this.round++;
-            this.codedRiddle = gameService.turnRiddleToCode(this.riddle);
-            this.highestGuess = null;
-            if (this.riddle.equals("End")){
+            System.out.println("Round: " + this.round);
+            if (this.round == 5){
+                System.out.println("Round: " + this.round);
+                this.riddle = "End";
                 return "End";
-            } else
-            return "Congratulations!";
+            } else {
+                System.out.println("Round: " + this.round);
+                this.riddle = gameService.getRiddle(this.riddleRepository);
+                this.codedRiddle = gameService.turnRiddleToCode(this.riddle);
+                this.highestGuess = null;
+                return "Congratulations!";
+            }
         } else {
             return "No, sorry, but no.";
         }

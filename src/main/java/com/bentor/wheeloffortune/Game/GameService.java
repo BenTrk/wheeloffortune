@@ -84,9 +84,7 @@ public class GameService {
         }
     }
 
-    public String getRiddle(RiddleRepository riddleRepository, Integer round) {
-        //write function for rounds.
-        if (round < 5) {
+    public String getRiddle(RiddleRepository riddleRepository) {
             List<Riddle> riddlesList = riddleRepository.findRiddleByWasUsed(false);
             String riddle;
             //generate a random number and get the random riddle, then remove it from the list so it wont be assigned again.
@@ -98,7 +96,6 @@ public class GameService {
             currentRiddle.setWasUsed(true);
             riddleRepository.save(currentRiddle);
             return riddle;
-        } else return "End";
     }
 
     public String turnRiddleToCode(String riddle){
@@ -225,15 +222,24 @@ public class GameService {
         System.out.println(team.getIsSilenced());
     }
 
-    public Boolean guessRiddle(String guess, String riddle, Team team, Integer guessMoney, TeamRepository teamRepository) {
+    public Boolean guessRiddle(String guess, String codedRiddle, String riddle, Team team, Integer guessMoney, TeamRepository teamRepository) {
         this.guessList.clear();
+        Integer result = 0;
+        for (char c : codedRiddle.toCharArray()){
+            if (!Character.isLetter(c) && c != ',' && c != '.' && c != ' '){
+                result++;
+            }
+        }
+        Integer riddleGuessPrize = guessMoney * result;
+
         if (guess.equalsIgnoreCase(riddle)){
-            team.setMoney(team.getMoney()-guessMoney);
+            //result: guessmoney * letters not known. Should be ADDED - good guess.
+            team.setMoney(team.getMoney() + riddleGuessPrize);
             teamRepository.save(team);
-            //what to do with other team's money? :)
             return true;
         } else {
-            team.setMoney(team.getMoney()-guessMoney);
+            //result: guessmoney * letters not known. Should be REMOVED - bad guess.
+            team.setMoney(team.getMoney()-riddleGuessPrize);
             teamRepository.save(team);
             return false;
         }
@@ -247,8 +253,9 @@ public class GameService {
             this.guessList.add(guess);
             System.out.println("Team money: " + guessingTeam.getMoney() + " Guess money: " + guess.getMoney()
             + "Result: " + (guessingTeam.getMoney() - guess.getMoney()));
-            guessingTeam.setMoney(guessingTeam.getMoney() - guess.getMoney());
-            teamRepository.save(guessingTeam);
+            //Here money should not be removed from account, this is just bidding.
+            //guessingTeam.setMoney(guessingTeam.getMoney() - guess.getMoney());
+            //teamRepository.save(guessingTeam);
             for (Guess g : this.guessList) {
                 if (g.getMoney() > highestGuess.getMoney()) {
                     highestGuess = g;
