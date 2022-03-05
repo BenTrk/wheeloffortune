@@ -72,34 +72,41 @@ public class GameService {
         }
     }
 
+    //when live: this is not needed. Read content from MySQL
     public void readRiddles(RiddleRepository riddleRepository) throws IOException {
         //read riddle from file - put content in MySQL
+        //hint and riddle is separated by ';'
         File file = new File("C:/Users/User/IdeaProjects/wheeloffortune/src/main/resources/riddles.txt");
         BufferedReader br = new BufferedReader(new FileReader(file));
         //read all lines of riddles file
         String line;
         while ((line = br.readLine()) != null) {
-            Riddle riddle = new Riddle(line, false);
+            String[] lineSplit = line.split("; ");
+            String hintString = lineSplit[0];
+            String riddleString = lineSplit[1];
+            Riddle riddle = new Riddle(hintString, riddleString, false);
             riddleRepository.save(riddle);
         }
     }
 
-    public String getRiddle(RiddleRepository riddleRepository) {
+    //when above is set, must return Riddle so frontend can have both hint and riddle.
+    public Riddle getRiddle(RiddleRepository riddleRepository) {
             List<Riddle> riddlesList = riddleRepository.findRiddleByWasUsed(false);
-            String riddle;
             //generate a random number and get the random riddle, then remove it from the list so it wont be assigned again.
             Random random = new Random();
             int maxRand = riddlesList.size();
             int rnd = random.nextInt(maxRand);
-            riddle = riddlesList.get(rnd).getRiddle();
             Riddle currentRiddle = riddlesList.get(rnd);
-            currentRiddle.setWasUsed(true);
-            riddleRepository.save(currentRiddle);
-            return riddle;
+            Riddle currentFromRepo = riddleRepository.findById(currentRiddle.getId()).orElse(null);
+            currentFromRepo.setWasUsed(true);
+            riddleRepository.save(currentFromRepo);
+            return currentFromRepo;
     }
 
-    public String turnRiddleToCode(String riddle){
-        char[] charSequence = riddle.toCharArray();
+    //again, when above is set, must return Riddle so frontend can have both hint and riddle.
+    public Riddle turnRiddleToCode(Riddle riddle){
+        Riddle toCodeRiddle = new Riddle();
+        char[] charSequence = riddle.getRiddle().toCharArray();
         for (int i = 0; i < charSequence.length; i++) {
             char c = charSequence[i];
             if (Character.isLetter(c)) {
@@ -107,7 +114,10 @@ public class GameService {
             }
             charSequence[i] = c;
         }
-        return String.valueOf(charSequence);
+        toCodeRiddle.setRiddle(String.valueOf(charSequence));
+        toCodeRiddle.setHint(riddle.getHint());
+        System.out.println("turnedtoCode:" + toCodeRiddle.getRiddle() + "not turned: " + riddle.getRiddle());
+        return toCodeRiddle;
     }
 
     public Team createTeam(String name){
@@ -124,9 +134,11 @@ public class GameService {
                                 TeamRepository teamRepository) {
         char[] charSequence = riddle.toCharArray();
         char[] codedCharSequence = codedRiddle.toCharArray();
+        System.out.println(riddle + " " + codedRiddle);
         Character g = Character.toLowerCase(guess);
         int counter = 0;
         for (int i = 0; i < charSequence.length; i++) {
+            System.out.println("char: " + charSequence[i] + "guesschar: " + g);
             Character c = Character.toLowerCase(charSequence[i]);
             if (!c.equals(g) && Character.isLetter(c)) {
                 c = codedCharSequence[i];
@@ -282,6 +294,15 @@ public class GameService {
             }
         }
         return winnersList;
+    }
+
+    public List<TableTeam> getTableTeams(List<Team> allteams) {
+        List<TableTeam> tableTeams = new ArrayList<>();
+        for(Team t : allteams) {
+            TableTeam tt = new TableTeam(t.getName(), t.getId());
+            tableTeams.add(tt);
+        }
+        return tableTeams;
     }
 }
 

@@ -1,5 +1,5 @@
-Tudja, hol szeret a cápa.
-Aki másnak kerbekerész, annak figymeregve tyutyu.
-Egy gyűrű mind fölött.
-Banánhinta Hadsereg.
-Jobb később, mint soha.
+Magyar: ; Tudja, hol szeret a cápa.
+Mondás: ; Aki másnak kerbekerész, annak figymeregve tyutyu.
+Film: ; Egy gyűrű mind fölött.
+Random: ; Banánhinta Hadsereg.
+Szólás: ; Jobb később, mint soha.

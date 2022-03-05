@@ -18,9 +18,11 @@ public class Riddle {
     @GeneratedValue(strategy = GenerationType.AUTO)
     int id;
     String riddle;
+    String hint;
     boolean wasUsed;
 
-    public Riddle(String riddle, boolean wasUsed) {
+    public Riddle(String hint, String riddle, boolean wasUsed) {
+        this.hint = hint;
         this.riddle = riddle;
         this.wasUsed = wasUsed;
     }

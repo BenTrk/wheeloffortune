@@ -20,8 +20,8 @@ public class GameController {
     private final RiddleRepository riddleRepository;
     private final TeamRepository teamRepository;
     private final PlayerRepository playerRepository;
-    private String riddle;
-    private String codedRiddle;
+    private Riddle riddle;
+    private Riddle codedRiddle;
     private final ArrayList<Prize> prizeList;
     private Team teamInPlay;
     private Prize prize;
@@ -41,6 +41,7 @@ public class GameController {
         gameService.readRiddles(riddleRepository);
         this.prizeList = gameService.prizeInitialize();
         this.round = 0;
+        this.riddle = gameService.getRiddle(this.riddleRepository);
     }
 
     //this may be not necessary
@@ -59,21 +60,23 @@ public class GameController {
     //  bonus: round should be handled as computed, and when GameController is initiated,
     //  this.round = (riddleRepository.findall where wasUsed = true).count
     @GetMapping(path = "/game")
-    public String gameLogic() {
+    public Riddle gameLogic() {
         if (this.round == 5){
-            return "End";
+            Riddle endRiddle = new Riddle("End", "End", false);
+            return endRiddle;
         } else {
-            this.riddle = gameService.getRiddle(this.riddleRepository);
+            //this.riddle = gameService.getRiddle(this.riddleRepository);
+            System.out.println("Riddle: " + this.riddle.getRiddle());
             this.codedRiddle = gameService.turnRiddleToCode(this.riddle);
-            System.out.println("Equals? " + this.riddle.equalsIgnoreCase("End"));
             return this.codedRiddle;
         }
     }
 
     @GetMapping(path = "/currentriddle")
-    public String currentRiddle(){
+    public Riddle currentRiddle(){
         if (this.round == 5){
-            return this.riddle;
+            Riddle endRiddle = new Riddle("End", "End", false);
+            return endRiddle;
         } else {
             return this.codedRiddle;
         }
@@ -125,8 +128,8 @@ public class GameController {
         Character c = guessChar.charAt(0);
         System.out.println(c);
         PrizeMoney pm = gameService.guessFunction(this.teamInPlay, this.prize.getValue(), c,
-                this.riddle, this.codedRiddle, this.teamRepository);
-        this.codedRiddle = pm.getRiddle();
+                this.riddle.getRiddle(), this.codedRiddle.getRiddle(), this.teamRepository);
+        this.codedRiddle.setRiddle(pm.getRiddle());
         return pm;
     }
 
@@ -166,13 +169,13 @@ public class GameController {
     @ResponseBody
     public String guessRiddle(@RequestBody RiddleGuess guess){
         System.out.println(guess.getGuess());
-        Boolean isGuessed = gameService.guessRiddle(guess.getGuess(),this.codedRiddle, this.riddle, this.teamInPlay, this.guessMoney, this.teamRepository);
+        Boolean isGuessed = gameService.guessRiddle(guess.getGuess(),this.codedRiddle.getRiddle(), this.riddle.getRiddle(), this.teamInPlay, this.guessMoney, this.teamRepository);
         if (isGuessed){
             this.round++;
             System.out.println("Round: " + this.round);
             if (this.round == 5){
                 System.out.println("Round: " + this.round);
-                this.riddle = "End";
+                this.riddle.setRiddle("End");
                 return "End";
             } else {
                 System.out.println("Round: " + this.round);
@@ -189,6 +192,75 @@ public class GameController {
     @GetMapping(path = "/winner")
     public List<Team> getWinner() {
         return gameService.getWinner(teamRepository);
+    }
+
+    @GetMapping(path = "/tableteams")
+    public List<TableTeam> getTableTeams() {
+        List<Team> allteams = teamRepository.findAll();
+        return gameService.getTableTeams(allteams);
+    }
+
+    @PostMapping(path = "/createteam")
+    @ResponseBody
+    public String createTeam(@RequestBody Team team){
+        Team t = gameService.createTeam(team.getName());
+        t.setIsSilenced(false);
+        teamRepository.save(t);
+        return "Success.";
+    }
+
+    @PostMapping(path = "/deleteteam")
+    @ResponseBody
+    public String deleteTeam(@RequestBody Team team){
+        teamRepository.deleteById(team.getId());
+        return "Success";
+    }
+
+    @PostMapping(path = "/editteam")
+    @ResponseBody
+    public String editTeam(@RequestBody Team team){
+        Team t = teamRepository.getById(team.getId());
+        t.setName(team.getName());
+        teamRepository.save(t);
+        return "Success";
+    }
+
+    @GetMapping(path = "/getplayers")
+    public List<PlayerWithTeam> getPlayers(){
+        List<PlayerWithTeam> playerWithTeamList = new ArrayList<>();
+        for (Player player : playerRepository.findAll()){
+            PlayerWithTeam pt = new PlayerWithTeam(player.getId(), player.getName(), player.getTeam().getName(), player.getTeam().getId());
+            System.out.println("Team name: " + pt.getTeamName());
+            playerWithTeamList.add(pt);
+        }
+        return playerWithTeamList;
+    }
+
+    @PostMapping(path = "/createplayer")
+    @ResponseBody
+    public String createPlayer(@RequestBody PlayerWithTeam playerWithTeam){
+        Team team = teamRepository.findById(playerWithTeam.getTeamId()).get();
+        Player player = new Player(playerWithTeam.getName(), team);
+        playerRepository.save(player);
+        return "Success.";
+    }
+
+    @PostMapping(path = "/deleteplayer")
+    @ResponseBody
+    public String deletePlayer(@RequestBody PlayerWithTeam playerWithTeam){
+        playerRepository.deleteById(playerWithTeam.getPlayerId());
+        return "Success.";
+    }
+
+    @PostMapping(path = "/editplayer")
+    @ResponseBody
+    public String editPlayer(@RequestBody PlayerWithTeam playerWithTeam){
+        Player player = playerRepository.findById(playerWithTeam.getPlayerId()).get();
+        Team team = teamRepository.findById(playerWithTeam.getTeamId()).get();
+        player.setName(playerWithTeam.getName());
+        player.setTeam(team);
+        playerRepository.save(player);
+        return "Success.";
     }
 
     //Testing purposes!

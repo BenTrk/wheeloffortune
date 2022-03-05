@@ -6,6 +6,6 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface RiddleRepository extends JpaRepository<Riddle, String> {
+public interface RiddleRepository extends JpaRepository<Riddle, Integer> {
     List<Riddle> findRiddleByWasUsed(@Param("wasUsed") Boolean wasUsed);
 }

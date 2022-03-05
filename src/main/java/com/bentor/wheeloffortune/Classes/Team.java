@@ -17,7 +17,7 @@ import java.util.Set;
 @Table(name = "teams")
 public class Team {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
     Long id;
     String name;
     int money = 0;
