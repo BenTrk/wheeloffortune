@@ -206,6 +206,9 @@ public class GameController {
         Team t = gameService.createTeam(team.getName());
         t.setIsSilenced(false);
         teamRepository.save(t);
+        if (teamRepository.findAll().size() == 1){
+            this.teamInPlay = t;
+        }
         return "Success.";
     }
 

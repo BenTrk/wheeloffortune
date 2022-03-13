@@ -16,17 +16,19 @@ public class GameService {
     List<Guess> guessList = new ArrayList<>();
 
     public Team whichTeamPlays(Team teamInPlay, TeamRepository teamRepository){
+        //Works only with preset teams, or teams set with all preset teams removed! Fix this.
         Long teamInPlayId;
         List<Team> teamList = teamRepository.findAll();
+        teamList.sort(Comparator.comparing(Team::getId));
         try{
             teamInPlayId = teamInPlay.getId();
-        } catch (NullPointerException ex){ teamInPlayId = -1L; }
+            System.out.println("TeamInPlay Id: " + teamInPlay.getId());
+        } catch (NullPointerException ex){ teamInPlayId = -1L; System.out.println("TeamInPlay Id = -1: " + teamInPlayId);}
         //if we just started the game, or we are at the end of the list
         if (teamInPlayId == -1L || teamInPlayId.equals(teamList.get(teamList.size() - 1).getId())){
             teamInPlayId = 0L;
             Team t = teamList.get(Math.toIntExact(teamInPlayId));
             Team team = teamRepository.findById(t.getId()).orElse(null);
-
             while (team.getIsSilenced()){
                 teamInPlayId = teamRepository.findById(team.getId()).orElse(null).getId();
                 team.setIsSilenced(false);
@@ -121,7 +123,7 @@ public class GameService {
     }
 
     public Team createTeam(String name){
-        return new Team(name);
+        return new Team(name, 0, false);
     }
 
     public Player createPlayer(TeamRepository teamRepository, String playerName, String teamName){
@@ -252,6 +254,9 @@ public class GameService {
         } else {
             //result: guessmoney * letters not known. Should be REMOVED - bad guess.
             team.setMoney(team.getMoney()-riddleGuessPrize);
+            if (team.getMoney() < 0){
+                team.setMoney(0);
+            }
             teamRepository.save(team);
             return false;
         }

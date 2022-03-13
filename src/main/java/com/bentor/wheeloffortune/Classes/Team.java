@@ -30,4 +30,10 @@ public class Team {
     public Team(String name){
         this.name = name;
     }
+
+    public Team(String name, int money, Boolean isSilenced){
+        this.name = name;
+        this.money = money;
+        this.isSilenced = isSilenced;
+    }
 }
