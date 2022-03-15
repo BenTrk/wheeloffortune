@@ -17,60 +17,64 @@ public class GameService {
 
     public Team whichTeamPlays(Team teamInPlay, TeamRepository teamRepository){
         //Works only with preset teams, or teams set with all preset teams removed! Fix this.
-        Long teamInPlayId;
+        //Should go though the list. Only get team from repo when needed to be saved.
         List<Team> teamList = teamRepository.findAll();
         teamList.sort(Comparator.comparing(Team::getId));
-        try{
-            teamInPlayId = teamInPlay.getId();
-            System.out.println("TeamInPlay Id: " + teamInPlay.getId());
-        } catch (NullPointerException ex){ teamInPlayId = -1L; System.out.println("TeamInPlay Id = -1: " + teamInPlayId);}
-        //if we just started the game, or we are at the end of the list
-        if (teamInPlayId == -1L || teamInPlayId.equals(teamList.get(teamList.size() - 1).getId())){
-            teamInPlayId = 0L;
-            Team t = teamList.get(Math.toIntExact(teamInPlayId));
-            Team team = teamRepository.findById(t.getId()).orElse(null);
-            while (team.getIsSilenced()){
-                teamInPlayId = teamRepository.findById(team.getId()).orElse(null).getId();
-                team.setIsSilenced(false);
-                teamRepository.save(team);
-                teamInPlayId++;
-                if (teamInPlayId <= teamList.get(teamList.size()-1).getId()){
-                    team = teamRepository.findById(teamInPlayId).orElse(null);
-                } else {
-                    teamInPlayId = 0L;
-                    t = teamList.get(Math.toIntExact(teamInPlayId));
-                    team = teamRepository.findById(t.getId()).orElse(null);
+        int indexOfTeam = -1;
+        try {
+            for (int i = 0; i < teamList.size(); i++) {
+                if (Objects.equals(teamList.get(i).getId(), teamInPlay.getId())) {
+                    indexOfTeam = i;
+                    System.out.println("TeamInPlay Id in list: " + indexOfTeam);
                 }
             }
-            System.out.println("last team in list: " + team.getName() + " " + team.getIsSilenced());
-            return team;
+        } catch (NullPointerException ex) {System.out.println("TeamInPlay Id: " + indexOfTeam);}
+        //if we just started the game, or we are at the end of the list
+        if (indexOfTeam == -1 || indexOfTeam == teamList.size() - 1){
+            indexOfTeam = 0;
+            Team t = teamList.get(indexOfTeam);
+            while (t.getIsSilenced()){
+                Team saveTeam = teamRepository.findById(t.getId()).get();
+                saveTeam.setIsSilenced(false);
+                teamRepository.save(saveTeam);
+                //so its content is updated every time a team changes in repo - isSilenced. :)
+                teamList = teamRepository.findAll();
+                indexOfTeam++;
+                if (indexOfTeam < teamList.size()) {
+                    t = teamList.get(indexOfTeam);
+                } else {
+                    indexOfTeam = 0;
+                    t = teamList.get(indexOfTeam);
+                }
+            }
+            System.out.println("last team in list: " + t.getName() + " " + t.getIsSilenced());
+            return t;
         }
         //if we are not at the end of the list
         else {
-            Long i = teamInPlay.getId()+1;
-            Optional<Team> optionalTeamInPlay = teamRepository.findById(i);
-            //isPresent check!
-            Team team = optionalTeamInPlay.orElse(null);
+            indexOfTeam++;
+            System.out.println("IndexOfTeam: " + indexOfTeam);
+            Team t = teamList.get(indexOfTeam);
             //Not elegant, but I will leave this as is. Can cause nullpointexception, but I know that it
             //wont. The id I provide above MUST be a valid team id - or the problem is not here.
-            while (team.getIsSilenced()){
-                team.setIsSilenced(false);
-                teamRepository.save(team);
-                i++;
-                System.out.println("team is silenced: " + team.getName() + "i: " + i);
-                if (i <= teamList.get(teamList.size()-1).getId()) {
-                    optionalTeamInPlay = teamRepository.findById(i);
-                    team = optionalTeamInPlay.orElse(null);
-                    System.out.println("teamid is less than the last teamid: " + team.getName());
+            while (t.getIsSilenced()){
+                Team saveTeam = teamRepository.findById(t.getId()).get();
+                saveTeam.setIsSilenced(false);
+                teamRepository.save(saveTeam);
+                teamList = teamRepository.findAll();
+                indexOfTeam++;
+                System.out.println("team is silenced: " + t.getName() + "i: " + indexOfTeam);
+                if (indexOfTeam < teamList.size()) {
+                    t = teamList.get(indexOfTeam);
+                    System.out.println("teamid is less than the last teamid: " + t.getName());
                 } else {
-                    i = 0L;
-                    Team t = teamList.get(Math.toIntExact(i));
-                    team = teamRepository.findById(t.getId()).orElse(null);
-                    System.out.println("teamid is the last team in list: " + team.getName());
+                    indexOfTeam = 0;
+                    t = teamList.get(indexOfTeam);
+                    System.out.println("teamid is the last team in list: " + t.getName());
                 }
             }
-            System.out.println("not last team in list: " + team.getName());
-            return team;
+            System.out.println("not last team in list: " + t.getName());
+            return t;
         }
     }
 
