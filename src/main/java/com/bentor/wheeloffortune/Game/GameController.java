@@ -267,6 +267,9 @@ public class GameController {
     }
 
     //Testing purposes!
+    //Now it is dll-auto: none, and with the IF statement, works like a charm. Not elegant, should be out and
+    //it is easy to remove this, but have no time, frontend needs a little shakeup. Anyway... it works, so be it.
+    //In case the SQL would be empty, this would create three random team.
     @GetMapping(path="/setup")
     public String setTeamAndPlayers(){
         if (teamRepository.findAll().size() < 1) {
